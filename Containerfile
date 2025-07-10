@@ -1,3 +1,5 @@
+LABEL org.opencontainers.image.source https://github.com/16levels/hercules
+
 # Install hercules dependencies to builder stage:
 #
 FROM fedora:latest as builder
