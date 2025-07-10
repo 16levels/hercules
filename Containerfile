@@ -34,6 +34,7 @@ EOF
 # Copy SDL-Hyperion build to runtime container.
 # Set environment variables, binary capabilities and attributes.
 # Create symbolic link to REXX library object for discoverability.  
+#
 USER hercules
 WORKDIR /home/hercules
 ENV PATH="/opt/herc4x/bin:${PATH}" LD_LIBRARY_PATH="/opt/herc4x/lib"
@@ -47,9 +48,11 @@ ln -s /lib64/libregina.so.3 /lib64/libregina.so
 EOF
 
 # Create Hercules machine and runtime configuration files:
+#
 USER hercules
 WORKDIR /home/hercules
+
 EXPOSE 3270/tcp
-EXPOSE 8038/tcp
+EXPOSE 8081/tcp
 
 CMD hercules
