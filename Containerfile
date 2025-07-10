@@ -1,11 +1,12 @@
+FROM fedora:42 as builder
 LABEL org.opencontainers.image.source https://github.com/16levels/hercules
 
 # Install hercules dependencies to builder stage:
 #
-FROM fedora:latest as builder
 RUN <<EOF
 dnf update
 dnf install -y time which libtool regina-rexx regina-rexx-devel regina-rexx-libs git wget gcc make cmake flex gawk m4 autoconf automake libtool-ltdl-devel bzip2-devel zlib-devel
+dnf clean all
 useradd hercules
 echo 'hercules ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers
 EOF
@@ -13,11 +14,9 @@ EOF
 # Build SDL-Hyperion using 'wrljet/hercules-helper': 
 #
 USER hercules
-WORKDIR /home/hercules
+WORKDIR /home/hercules/build
 RUN <<EOF
-git clone https://github.com/wrljet/hercules-helper.git
-mkdir build
-cd build
+git clone https://github.com/wrljet/hercules-helper.git ~/hercules-helper/
 ~/hercules-helper/hercules-buildall.sh --auto --flavor=sdl-hyperion --no-packages --sudo --no-envscript --no-bashrc --prefix=/opt/herc4x --no-setcap
 EOF
 
@@ -26,8 +25,8 @@ EOF
 # Set binary capabilities.
 # Create symbolic link to REXX library object for discoverability.  
 #
-FROM fedora:latest
-COPY --from=builder /opt/herc4x/ /opt/herc4x
+FROM fedora:42
+COPY --from=builder /opt/herc4x /opt/herc4x
 
 RUN <<EOF
 dnf -y update
@@ -48,4 +47,4 @@ USER hercules
 EXPOSE 3270/tcp
 EXPOSE 8081/tcp
 
-CMD hercules
+CMD ["hercules"]
