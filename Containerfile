@@ -21,37 +21,30 @@ cd build
 ~/hercules-helper/hercules-buildall.sh --auto --flavor=sdl-hyperion --no-packages --sudo --no-envscript --no-bashrc --prefix=/opt/herc4x --no-setcap
 EOF
 
+# Copy SDL-Hyperion build to runtime container.
 # Install REXX in runtime container
+# Set binary capabilities.
+# Create symbolic link to REXX library object for discoverability.  
 #
 FROM fedora:latest
+COPY --from=builder /opt/herc4x/ /opt/herc4x
+
 RUN <<EOF
 dnf -y update
 dnf -y install regina-rexx regina-rexx-libs
 dnf clean all
 useradd hercules 
-EOF
-
-# Copy SDL-Hyperion build to runtime container.
-# Set environment variables, binary capabilities and attributes.
-# Create symbolic link to REXX library object for discoverability.  
-#
-USER hercules
-WORKDIR /home/hercules
-ENV PATH="/opt/herc4x/bin:${PATH}" LD_LIBRARY_PATH="/opt/herc4x/lib"
-COPY --from=builder /opt/herc4x/ /opt/herc4x
-USER root
-RUN <<EOF
 setcap 'cap_sys_nice=eip' /opt/herc4x/bin/hercules
 setcap 'cap_sys_nice=eip' /opt/herc4x/bin/herclin
 setcap 'cap_net_admin+ep' /opt/herc4x/bin/hercifc
 ln -s /lib64/libregina.so.3 /lib64/libregina.so
 EOF
 
-# Create Hercules machine and runtime configuration files:
+# Set environment variables
 #
-USER hercules
+ENV PATH="/opt/herc4x/bin:${PATH}" LD_LIBRARY_PATH="/opt/herc4x/lib"
 WORKDIR /home/hercules
-
+USER hercules
 EXPOSE 3270/tcp
 EXPOSE 8081/tcp
 
