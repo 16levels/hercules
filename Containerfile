@@ -44,7 +44,6 @@ EOF
 ENV PATH="/opt/herc4x/bin:${PATH}" LD_LIBRARY_PATH="/opt/herc4x/lib"
 WORKDIR /home/hercules
 USER hercules
-EXPOSE 3270/tcp
-EXPOSE 8081/tcp
+EXPOSE 3270/tcp 8081/tcp
 
 CMD ["hercules"]
