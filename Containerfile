@@ -1,11 +1,11 @@
-FROM fedora:42 as builder
+FROM registry.fedoraproject.org/fedora-minimal:42 as builder
 LABEL org.opencontainers.image.source https://github.com/16levels/hercules
 
 # Install hercules dependencies to builder stage:
 #
 RUN <<EOF
 dnf update
-dnf install -y time which libtool regina-rexx regina-rexx-devel regina-rexx-libs git wget gcc make cmake flex gawk m4 autoconf automake libtool-ltdl-devel bzip2-devel zlib-devel
+dnf install -y sudo time which libtool regina-rexx regina-rexx-devel regina-rexx-libs git wget gcc make cmake flex gawk m4 autoconf automake libtool-ltdl-devel bzip2-devel zlib-devel
 dnf clean all
 useradd hercules
 echo 'hercules ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers
@@ -25,7 +25,7 @@ EOF
 # Set binary capabilities.
 # Create symbolic link to REXX library object for discoverability.  
 #
-FROM fedora:42
+FROM registry.fedoraproject.org/fedora-minimal:42
 COPY --from=builder /opt/herc4x /opt/herc4x
 
 RUN <<EOF
@@ -39,11 +39,12 @@ setcap 'cap_net_admin+ep' /opt/herc4x/bin/hercifc
 ln -s /lib64/libregina.so.3 /lib64/libregina.so
 EOF
 
-# Set environment variables
+# Set environment variables, user & working directory.
 #
 ENV PATH="/opt/herc4x/bin:${PATH}" LD_LIBRARY_PATH="/opt/herc4x/lib"
 WORKDIR /home/hercules
 USER hercules
+
 EXPOSE 3270/tcp 8081/tcp
 
 CMD ["hercules"]
