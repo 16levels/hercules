@@ -1,42 +1,39 @@
-FROM registry.fedoraproject.org/fedora-minimal:42 as builder
+FROM alpine:3.22 AS builder
 LABEL org.opencontainers.image.source https://github.com/16levels/hercules
 
 # Install hercules dependencies to builder stage:
 #
 RUN <<EOF
-dnf update
-dnf install -y sudo time which libtool regina-rexx regina-rexx-devel regina-rexx-libs git wget gcc make cmake flex gawk m4 autoconf automake libtool-ltdl-devel bzip2-devel zlib-devel
-dnf clean all
-useradd hercules
-echo 'hercules ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers
+apk add --no-cache curl libc6-compat musl-locales procps build-base bash doas-sudo-shim libtool git wget gcc make cmake flex gawk m4 autoconf automake libltdl bzip2-dev zlib-dev libcap libcap-dev
+
+adduser -D hercules
+echo 'permit nopass hercules' >> /etc/doas.conf
 EOF
 
 # Build SDL-Hyperion using 'wrljet/hercules-helper': 
 #
+ENV opt_regina_dir="Regina-REXX-3.9.3" opt_regina_tarfile="Regina-REXX-3.9.3.tar.gz" opt_regina_url="https://gist.github.com/wrljet/dd19076064da7c3dea1aa9614fc37511/raw/e842479d63fae7af79d4aec467b8fdb148ca196a/Regina-REXX-3.9.3.tar.gz"
 USER hercules
 WORKDIR /home/hercules/build
 RUN <<EOF
 git clone https://github.com/wrljet/hercules-helper.git ~/hercules-helper/
-~/hercules-helper/hercules-buildall.sh --auto --flavor=sdl-hyperion --no-packages --sudo --no-envscript --no-bashrc --prefix=/opt/herc4x --no-setcap
+~/hercules-helper/hercules-buildall.sh --auto --flavor=sdl-hyperion --sudo --no-packages --no-envscript --no-bashrc --prefix=/opt/herc4x --no-setcap --no-rexx
 EOF
 
 # Copy SDL-Hyperion build to runtime container.
-# Install REXX in runtime container
 # Set binary capabilities.
-# Create symbolic link to REXX library object for discoverability.  
 #
-FROM registry.fedoraproject.org/fedora-minimal:42
+FROM alpine:3.22
 COPY --from=builder /opt/herc4x /opt/herc4x
 
 RUN <<EOF
-dnf -y update
-dnf -y install regina-rexx regina-rexx-libs
-dnf clean all
-useradd hercules 
+apk add --no-cache libcap
+
+adduser -D hercules 
 setcap 'cap_sys_nice=eip' /opt/herc4x/bin/hercules
 setcap 'cap_sys_nice=eip' /opt/herc4x/bin/herclin
 setcap 'cap_net_admin+ep' /opt/herc4x/bin/hercifc
-ln -s /lib64/libregina.so.3 /lib64/libregina.so
+
 EOF
 
 # Set environment variables, user & working directory.
@@ -44,7 +41,5 @@ EOF
 ENV PATH="/opt/herc4x/bin:${PATH}" LD_LIBRARY_PATH="/opt/herc4x/lib"
 WORKDIR /home/hercules
 USER hercules
-
-EXPOSE 3270/tcp 8081/tcp
 
 CMD ["hercules"]
