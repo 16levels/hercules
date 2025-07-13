@@ -12,7 +12,6 @@ EOF
 
 # Build SDL-Hyperion using 'wrljet/hercules-helper': 
 #
-ENV opt_regina_dir="Regina-REXX-3.9.3" opt_regina_tarfile="Regina-REXX-3.9.3.tar.gz" opt_regina_url="https://gist.github.com/wrljet/dd19076064da7c3dea1aa9614fc37511/raw/e842479d63fae7af79d4aec467b8fdb148ca196a/Regina-REXX-3.9.3.tar.gz"
 USER hercules
 WORKDIR /home/hercules/build
 RUN <<EOF
