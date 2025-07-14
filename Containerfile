@@ -4,7 +4,7 @@ LABEL org.opencontainers.image.source https://github.com/16levels/hercules
 # Install hercules dependencies to builder stage:
 #
 RUN <<EOF
-apk add --no-cache curl libc6-compat musl-locales procps build-base bash doas-sudo-shim libtool git wget gcc make cmake flex gawk m4 autoconf automake libltdl bzip2-dev zlib-dev libcap libcap-dev
+apk add --no-cache autoconf automake bash build-base bzip2-dev cmake curl doas-sudo-shim flex gawk gcc git libc6-compat libcap libcap-dev libltdl libtool m4 make musl-locales procps wget zlib-dev
 
 adduser -D hercules
 echo 'permit nopass hercules' >> /etc/doas.conf
