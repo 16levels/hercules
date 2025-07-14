@@ -28,7 +28,7 @@ Hercules will look for machine and runtime configuration files named `hercules.c
 ```
 podman run -d \
         --cap-add=NET_ADMIN,SYS_NICE \
-        -p 127.0.0.1:3270:3270 -p 8038:8038 \
+        -p 3270:3270 -p 8038:8038 \
         -v "$(pwd)/VSE":/home/hercules/VSE \
         -w /home/hercules/VSE \
         -e HERCULES_CNF="vse.cnf" \
