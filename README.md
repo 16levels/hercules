@@ -2,7 +2,7 @@
 Builds the latest SDL-Hercules (Hyperion) within an OCI container.
 
 ## How to build
-```
+```console
 podman build -t 16levels/hercules https://github.com/16levels/hercules.git
 ```
 
@@ -14,7 +14,7 @@ By default, hercules runs within this container as a non-root user. In order to 
 - Use the option `-p` to explicitly publish ports as defined in `HERCULES_CNF`.
 
 Example (Interactive Panel):
-```
+```console
 podman run -it \
         --cap-add=NET_ADMIN,SYS_NICE \
         -p 3270:3270 -p 8081:8081 \
@@ -25,7 +25,7 @@ To IPL the system, use the `-v=` option to create a bind mount of the host direc
 
 Hercules will look for machine and runtime configuration files named `hercules.cnf` and `hercules.rc` in the working directory. Explicitly set relative paths to `HERCULES_CNF` and `HERCULES_RC` at runtime by using the `-e=` option to set environment variables: 
 
-```
+```console
 podman run -d \
         --cap-add=NET_ADMIN,SYS_NICE \
         -p 3270:3270 -p 8038:8038 \
@@ -38,8 +38,7 @@ podman run -d \
 
 Alternatively, all necessary configuration and storage files can be built into a child container image.
 
-Containerfile:
-```
+```dockerfile
 FROM alpine:3.22 AS builder
 RUN apk add --no-cache 7zip=24.09-r0
 COPY VSE.iso /tmp
