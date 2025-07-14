@@ -49,6 +49,8 @@ setcap 'cap_sys_nice=eip' /opt/herc4x/bin/hercules
 setcap 'cap_sys_nice=eip' /opt/herc4x/bin/herclin
 setcap 'cap_net_admin+ep' /opt/herc4x/bin/hercifc
 
+ln -s /opt/regina/lib/libregina.so.3.9 /usr/local/lib/libregina.so
+
 EOF
 
 # Set environment variables, user & working directory.
