@@ -2,34 +2,46 @@
 Builds the latest SDL-Hercules (Hyperion) within an OCI container.
 
 ## How to build
-```
+```console
 podman build -t 16levels/hercules https://github.com/16levels/hercules.git
 ```
 
 ## How to run
 By default, hercules runs within this container as a non-root user. In order to run in unprivileged mode, the `NET_ADMIN`[^net_admin] and `SYS_NICE`[^sys_nice] Linux capabilities must be granted by providing the option `--cap-add=NET_ADMIN,SYS_NICE`.[^capabilities]
 
-Ports 3270/tcp and 8081/tcp are exposed for TN3270 and HTTP access, respectively.
+- Use the options `-it` (`-i`, `-t`) to launch an interactive session. 
+- Alternatively, specify `-d` to launch the container in daemon mode. 
+- Use the option `-p` to explicitly publish ports as defined in `HERCULES_CNF`.
 
-Example (Interactive/TTY):
-```
-podman run -ti -p3270:3270 -p8081:8081 --cap-add=NET_ADMIN,SYS_NICE 16levels/hercules 
-```
-
-Hercules will use machine and runtime configuration files named `hercules.cnf` and `hercules.rc` from the working directory. To IPL the system, use the `-v=` option to create a bind mount of the host directory containing necessary configuration and storage files under a subdirectory of `/home/hercules/` within the container. Use the `-w=` option to set the container's `WORKDIR` to the mount destination.
-
-Example (Volume Bind Mount):
-```
-export src_dir="/home/16levels/VSE"
-export dest_dir="/home/hercules/VSE"
-podman run --cap-add=NET_ADMIN,SYS_NICE -ti -p3270:3270 -p8081:8081 -v=$src_dir:$dest_dir:U,Z -w=$dest_dir 16levels/hercules
+Example (Interactive Panel):
+```console
+podman run -it \
+        --cap-add=NET_ADMIN,SYS_NICE \
+        -p 3270:3270 -p 8081:8081 \
+        ghcr.io/16levels/hercules
 ```
 
-Alternatively, the necessary configuration and storage files can be copied into a new container image build.
+To IPL the system, use the `-v=` option to create a bind mount of the host directory containing necessary configuration and storage files under a subdirectory of `/home/hercules/` within the container. Use the `-w=` option to set the container's `WORKDIR` to the mount destination.
 
-Containerfile:
+Hercules will look for machine and runtime configuration files named `hercules.cnf` and `hercules.rc` in the working directory. Explicitly set relative paths to `HERCULES_CNF` and `HERCULES_RC` at runtime by using the `-e=` option to set environment variables: 
+
+```console
+podman run -d \
+        --cap-add=NET_ADMIN,SYS_NICE \
+        -p 3270:3270 -p 8038:8038 \
+        -v "$(pwd)/VSE":/home/hercules/VSE \
+        -w /home/hercules/VSE \
+        -e HERCULES_CNF="vse.cnf" \
+        -e HERCULES_RC="vse.rc" \
+        ghcr.io/16levels/hercules
 ```
-FROM alpine:3.22 as builder
+
+## Use as base image
+Depending on file size, it may be desirable to copy all necessary configuration and device files into a container image.
+
+Example (VSE):
+```dockerfile
+FROM alpine:3.22 AS builder
 RUN apk add --no-cache 7zip=24.09-r0
 COPY VSE.iso /tmp
 SHELL ["/bin/ash", "-eo", "pipefail", "-c"]
@@ -40,17 +52,20 @@ find /VSE -type d -empty -delete
 EOF
 
 FROM 16levels/hercules:latest
-# Copy VSE/ESA to runtime container.
+# Copy VSE to runtime container.
 COPY --from=builder --chown=hercules:hercules /VSE /home/hercules/VSE
 
 # Create Hercules machine and runtime configuration files:
 USER hercules
 WORKDIR /home/hercules/VSE
-COPY <<EOF hercules.rc
+
+
+COPY <<EOF vse.rc
 ipl 150
 EOF
 
-COPY <<EOF hercules.cnf
+
+COPY <<EOF vse.cnf
 MANUFACTURER IBM
 PLANT        02
 CPUSERIAL    000001
@@ -82,6 +97,10 @@ PGMPRDOS     LICENSED
 HTTP     PORT     8081 NOAUTH
 HTTP     START
 EOF
+
+
+ENV HERCULES_CNF="vse.cnf" HERCULES_RC="vse.rc"
+EXPOSE 3270/tcp 8081/tcp
 
 CMD ["hercules"]
 ```
