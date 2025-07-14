@@ -36,8 +36,10 @@ podman run -d \
         ghcr.io/16levels/hercules
 ```
 
-Alternatively, all necessary configuration and storage files can be built into a child container image.
+## Use as base image
+Depending on file size, it may be desirable to copy all necessary configuration and device files into a container image.
 
+Example (VSE):
 ```dockerfile
 FROM alpine:3.22 AS builder
 RUN apk add --no-cache 7zip=24.09-r0
@@ -50,7 +52,7 @@ find /VSE -type d -empty -delete
 EOF
 
 FROM 16levels/hercules:latest
-# Copy VSE/ESA to runtime container.
+# Copy VSE to runtime container.
 COPY --from=builder --chown=hercules:hercules /VSE /home/hercules/VSE
 
 # Create Hercules machine and runtime configuration files:
