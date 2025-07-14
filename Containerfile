@@ -26,7 +26,7 @@ FROM alpine:3.22
 COPY --from=builder /opt/herc4x /opt/herc4x
 
 RUN <<EOF
-apk add --no-cache libcap
+apk add --no-cache libbz2 libcap
 
 adduser -D hercules 
 setcap 'cap_sys_nice=eip' /opt/herc4x/bin/hercules
