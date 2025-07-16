@@ -26,7 +26,7 @@ To IPL the system, use the `-v=` option to create a bind mount of the host direc
 Hercules will look for machine and runtime configuration files named `hercules.cnf` and `hercules.rc` in the working directory. Explicitly set relative paths to `HERCULES_CNF` and `HERCULES_RC` at runtime by using the `-e=` option to set environment variables: 
 
 ```console
-podman run -d \
+podman run -it \
         --cap-add=NET_ADMIN,SYS_NICE \
         --userns=keep-id \
         -p 3270:3270 -p 8038:8038 \
