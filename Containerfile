@@ -1,13 +1,25 @@
 FROM alpine:3.22 AS builder
 LABEL org.opencontainers.image.source="https://github.com/16levels/hercules"
 
-# Install hercules dependencies to builder stage:
+# Install dependencies to builder stage:
 #
 RUN <<EOF
-apk add --no-cache autoconf automake bash build-base bzip2-dev cmake curl doas-sudo-shim flex gawk gcc git libc6-compat libcap libcap-dev libltdl libtool m4 make musl-locales procps wget zlib-dev
+apk add --no-cache autoconf automake bash build-base bzip2-dev cmake curl doas-sudo-shim flex gawk gcc git libc6-compat libcap libcap-dev libltdl libtool m4 make musl-locales procps python3 wget zlib-dev
 
 adduser -D hercules
 echo 'permit nopass hercules' >> /etc/doas.conf
+EOF
+
+
+# Build `s3270`
+WORKDIR /tmp/suite3270-4.4
+ADD --checksum="sha256:8438eee59795cd3bfbf1963053369b9aa30af6b85e4d927b7254d24e992433b1" https://x3270.bgp.nu/download/04.04/suite3270-4.4ga6-src.tgz /tmp/
+RUN <<EOF
+tar -xz -C /tmp -f /tmp/suite3270-4.4ga6-src.tgz
+rm /tmp/suite3270-4.4ga6-src.tgz
+./configure --enable-s3270
+make
+make install
 EOF
 
 # Build Regina-REXX: 
@@ -40,9 +52,10 @@ EOF
 FROM alpine:3.22
 COPY --from=builder /opt/regina /opt/regina
 COPY --from=builder /opt/herc4x /opt/herc4x
+COPY --from=builder /usr/local/bin /usr/local/bin
 
 RUN <<EOF
-apk add --no-cache libbz2 libcap
+apk add --no-cache expect libbz2 libcap
 
 adduser -D hercules 
 setcap 'cap_sys_nice=eip' /opt/herc4x/bin/hercules
