@@ -2,30 +2,37 @@
 Builds the latest SDL-Hercules (Hyperion) within an OCI container.
 
 ## How to build
-```console
+[source, console]
+----
 podman build -t 16levels/hercules https://github.com/16levels/hercules.git
-```
+----
 
 ## How to run
-By default, hercules runs within this container as a non-root user. In order to run in unprivileged mode, the `NET_ADMIN`[^net_admin] and `SYS_NICE`[^sys_nice] Linux capabilities must be granted by providing the option `--cap-add=NET_ADMIN,SYS_NICE`.[^capabilities]
+:fn-net_admin: footnote:[Allows performing various network-related operations.]
+:fn-sys_nice: footnote:[Allows raising process nice value (nice(2), setpriority(2)) and changing the nice value for arbitrary processes.]
+:fn-cap: footnote:[See link:https://github.com/SDL-Hercules-390/hyperion/blob/master/readme/README.SETUID.md[Hercifc and Hercules as setuid root programs]]
+
+By default, hercules runs within this container as a non-root user. In order to run in unprivileged mode, the `NET_ADMIN`{fn-net_admin} and `SYS_NICE`{fn-sys_nice} Linux capabilities must be granted by providing the option `--cap-add=NET_ADMIN,SYS_NICE`. {fn-cap}
 
 - Use the options `-it` (`-i`, `-t`) to launch an interactive session. 
 - Alternatively, specify `-d` to launch the container in daemon mode. 
 - Use the option `-p` to explicitly publish ports as defined in `HERCULES_CNF`.
 
 Example (Interactive Panel):
-```console
+[source, console]
+----
 podman run -it \
         --cap-add=NET_ADMIN,SYS_NICE \
         -p 3270:3270 -p 8081:8081 \
         ghcr.io/16levels/hercules
-```
+----
 
 To IPL the system, use the `-v=` option to create a bind mount of the host directory containing necessary configuration and storage files under a subdirectory of `/home/hercules/` within the container. Use the `-w=` option to set the container's `WORKDIR` to the mount destination.
 
 Hercules will look for machine and runtime configuration files named `hercules.cnf` and `hercules.rc` in the working directory. Explicitly set relative paths to `HERCULES_CNF` and `HERCULES_RC` at runtime by using the `-e=` option to set environment variables: 
 
-```console
+[source, console]
+----
 podman run -it \
         --cap-add=NET_ADMIN,SYS_NICE \
         --userns=keep-id \
@@ -35,13 +42,14 @@ podman run -it \
         -e HERCULES_CNF="vse.cnf" \
         -e HERCULES_RC="vse.rc" \
         ghcr.io/16levels/hercules
-```
+----
 
 ## Use as base image
 Depending on file size, it may be desirable to copy all necessary configuration and device files into a container image.
 
-Example (VSE):
-```dockerfile
+Example:
+[source, dockerfile]
+----
 FROM alpine:3.22 AS builder
 RUN apk add --no-cache 7zip=24.09-r0
 COPY VSE.iso /tmp
@@ -60,11 +68,9 @@ COPY --from=builder --chown=hercules:hercules /VSE /home/hercules/VSE
 USER hercules
 WORKDIR /home/hercules/VSE
 
-
 COPY <<EOF vse.rc
 ipl 150
 EOF
-
 
 COPY <<EOF vse.cnf
 MANUFACTURER IBM
@@ -96,7 +102,7 @@ PGMPRDOS     LICENSED
 0151     3390     SYSWK1.151
 
 HTTP     PORT     8081 NOAUTH
-HTTP     START
+#HTTP     START
 EOF
 
 
@@ -104,8 +110,42 @@ ENV HERCULES_CNF="vse.cnf" HERCULES_RC="vse.rc"
 EXPOSE 3270/tcp 8081/tcp
 
 CMD ["hercules"]
-```
+----
 
-[^net_admin]: Allows performing various network-related operations.
-[^sys_nice]: Allows raising process nice value (nice(2), setpriority(2)) and changing the nice value for arbitrary processes.
-[^capabilities]: See [Hercifc and Hercules as setuid root programs](https://github.com/SDL-Hercules-390/hyperion/blob/master/readme/README.SETUID.md).
+## Scripting
+Various utilities are available to accomodate 3270 terminal session automation. 
+
+.3270 Screen Scraping/Automation
+* `s3270` opens a telnet connection to an IBM host, then allows a script to control the host login session. 
+* `x3270if` provides an interface between scripts and the 3270 emulators x3270, c3270, and s3270.
+* `pr3287` opens a telnet connection to an IBM host, and emulates an IBM 3287 printer.
+* `prtodir` allows pr3287 to save plain text to files.
+
+.Languages/Tools
+* `sh` (busybox)
+* `awk` (busybox)
+* `rexx`/`regina`
+* `expect`
+
+These tools may be invoked directly when running the container, used within a script ran by the container, or used within a `hercules` runtime configuration file (`HERCULES_RC`).
+
+Example:
+[source, title="hercules.rc"]
+----
+# Example `hercules.rc`
+shcmdopt enable
+ipl 150
+pause 1
+* Opening `s3270` master console script session on port 7320:
+sh s3270 -scriptport 7320 -trace -tracefile ipl.trace &
+pause 1
+sh x3270if -t 7320 'connect(127.0.0.1:3270)'
+pause 1
+* Responding to messages on master console...
+sh x3270if -t 7320 enter
+pause 1
+sh x3270if -t 7320 'string "0 delete\n"'
+shcmdopt disable
+----
+
+
