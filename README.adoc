@@ -1,3 +1,8 @@
+:fn-net_admin: footnote:[Allows performing various network-related operations.]
+:fn-sys_nice: footnote:[Allows raising process nice value (nice(2), setpriority(2)) and changing the nice value for arbitrary processes.]
+:fn-cap: footnote:[See link:https://github.com/SDL-Hercules-390/hyperion/blob/master/readme/README.SETUID.md[Hercifc and Hercules as setuid root programs]]
+:fn-languages: pass:c,q[footnote:[Additional languages, e.g., `bash`, `perl`, `python3`, `tcl`, can be added to the image with `apk add`.]]
+
 # oci-hercules
 Builds the latest SDL-Hercules (Hyperion) within an OCI container.
 
@@ -8,10 +13,6 @@ podman build -t 16levels/hercules https://github.com/16levels/hercules.git
 ----
 
 ## How to run
-:fn-net_admin: footnote:[Allows performing various network-related operations.]
-:fn-sys_nice: footnote:[Allows raising process nice value (nice(2), setpriority(2)) and changing the nice value for arbitrary processes.]
-:fn-cap: footnote:[See link:https://github.com/SDL-Hercules-390/hyperion/blob/master/readme/README.SETUID.md[Hercifc and Hercules as setuid root programs]]
-
 By default, hercules runs within this container as a non-root user. In order to run in unprivileged mode, the `NET_ADMIN`{fn-net_admin} and `SYS_NICE`{fn-sys_nice} Linux capabilities must be granted by providing the option `--cap-add=NET_ADMIN,SYS_NICE`. {fn-cap}
 
 - Use the options `-it` (`-i`, `-t`) to launch an interactive session. 
@@ -37,7 +38,7 @@ podman run -it \
         --cap-add=NET_ADMIN,SYS_NICE \
         --userns=keep-id \
         -p 3270:3270 -p 8038:8038 \
-        -v "$(pwd)/VSE":/home/hercules/VSE \
+        -v "$(pwd)/VSE":/home/hercules/VSE:Z \
         -w /home/hercules/VSE \
         -e HERCULES_CNF="vse.cnf" \
         -e HERCULES_RC="vse.rc" \
@@ -117,22 +118,21 @@ Various utilities are available to accomodate 3270 terminal session automation.
 
 .3270 Screen Scraping/Automation
 * `s3270` opens a telnet connection to an IBM host, then allows a script to control the host login session. 
-* `x3270if` provides an interface between scripts and the 3270 emulators x3270, c3270, and s3270.
+* `x3270if` provides an interface between scripts and the 3270 emulators `x3270`, `c3270`, and `s3270`.
 * `pr3287` opens a telnet connection to an IBM host, and emulates an IBM 3287 printer.
-* `prtodir` allows pr3287 to save plain text to files.
+* `prtodir` allows `pr3287` to save plain text to files.
 
-.Languages/Tools
+.Languages/Tools{fn-languages}
 * `sh` (busybox)
 * `awk` (busybox)
 * `rexx`/`regina`
 * `expect`
 
-These tools may be invoked directly when running the container, used within a script ran by the container, or used within a `hercules` runtime configuration file (`HERCULES_RC`).
+Languages and tools may be invoked directly when running the container, used within a script ran by the container, or used within a `hercules` runtime configuration file (`HERCULES_RC`).
 
 Example:
 [source, title="hercules.rc"]
 ----
-# Example `hercules.rc`
 shcmdopt enable
 ipl 150
 pause 1
